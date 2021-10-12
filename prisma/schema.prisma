@@ -1,0 +1,103 @@
+datasource db {
+  provider             = "mysql"
+  url                  = env("DATABASE_URL")
+  shadowDatabaseUrl    = env("SHADOW_DATABASE_URL")
+  planetScaleMode      = true
+  referentialIntegrity = "prisma"
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["referentialIntegrity"]
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name       String
+  visibility String @default("public")
+
+  // refs
+  project   Project[]
+  templates Template[]
+  updates   Update[]
+}
+
+model Project {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name       String
+  visibility String @default("public")
+
+  // refs
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  templates      Template[]
+  updates        Update[]
+}
+
+model Person {
+  email     String @id @default(uuid())
+  name      String
+  avatarURL String
+
+  // refs
+  templates Template[]
+  updates   Update[]
+}
+
+model Publish {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  content String
+  status  String
+
+  // refs
+  channelId String
+  update    Update @relation(fields: [updateId], references: [id])
+  updateId  String
+}
+
+model Template {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  content    String
+  name       String
+  visibility String @default("public")
+
+  // refs
+  authors        Person[]     @relation(references: [email])
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  project        Project?     @relation(fields: [projectId], references: [id])
+  projectId      String?
+
+  @@unique([name, organizationId, projectId])
+}
+
+model Update {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  content    String
+  name       String
+  visibility String @default("public")
+
+  // refs
+  authors        Person[]     @relation(references: [email])
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  project        Project      @relation(fields: [projectId], references: [id])
+  projectId      String
+  published      Publish[]
+
+  @@unique([name, organizationId, projectId])
+}
